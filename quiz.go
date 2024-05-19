@@ -71,7 +71,10 @@ func parseLine(line []string) (question, result string) {
 func getUserInput(question string) string {
 	var guess string
 	fmt.Println(question)
-	fmt.Scanln(&guess)
+	_, err := fmt.Scanln(&guess)
+	if err != nil {
+		return ""
+	}
 	return guess
 }
 
