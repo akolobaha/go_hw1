@@ -31,19 +31,59 @@ type Data struct {
 }
 
 func main() {
-	printResultsTable()
+	printAggregatedResultTable()
 }
 
-func printResultsTable() {
+/*
+*
+4. Для предыдущей задачи необходимо вывести сводную таблицу по всем предметам
+*/
+
+type subjectGrade struct {
+	grade  int
+	result []int
+}
+
+func printAggregatedResultTable() {
 	data := readFile()
 
-	fmt.Printf("--------------------------------------------\n")
-	fmt.Printf("%-12s | %-5s | %-10s | %-6s |\n", "Student name", "Grade", "Object", "Result")
-	fmt.Printf("--------------------------------------------\n")
+	subjectsResult := make(map[string]map[int]subjectGrade)
 
 	for _, result := range data.Results {
 		student := getStudentById(result.StudentId, data.Students)
-		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", student.Name, student.Grade, getObjectNameById(result.ObjectId, data.Objects), result.Result)
+		objectName := getObjectNameById(result.ObjectId, data.Objects)
+
+		value, ok := subjectsResult[objectName]
+		if !ok {
+			value = make(map[int]subjectGrade)
+			subjectsResult[objectName] = value
+		}
+
+		subjectGradeValue, ok := value[student.Grade]
+		if ok {
+			subjectGradeValue.result = append(subjectGradeValue.result, result.Result)
+		} else {
+			subjectGradeValue = subjectGrade{
+				grade:  student.Grade,
+				result: []int{result.Result},
+			}
+		}
+
+		value[student.Grade] = subjectGradeValue
+	}
+
+	for subjectName, subjectData := range subjectsResult {
+		fmt.Printf("----------------------\n")
+		fmt.Printf("%-12s | %-5s |\n", subjectName, "Mean")
+		var totalObjGrade float64
+		for gradeNumber, gradeData := range subjectData {
+			avgGrade := avgGrade(gradeData.result)
+			totalObjGrade += avgGrade
+			fmt.Printf("%-12d | %-5.1f |\n", gradeNumber, avgGrade)
+		}
+		fmt.Printf("----------------------\n")
+		fmt.Printf("%-12s | %-5.1f |\n", "mean", float64(totalObjGrade)/float64(len(subjectData)))
+		fmt.Printf("----------------------\n")
 	}
 }
 
@@ -81,4 +121,12 @@ func readFile() Data {
 	}
 
 	return data
+}
+
+func avgGrade(arr []int) float64 {
+	var result int
+	for _, value := range arr {
+		result += value
+	}
+	return float64(result) / float64(len(arr))
 }
