@@ -30,22 +30,6 @@ type Data struct {
 	Results  []Result  `json:"results"`
 }
 
-type Cache[K comparable, V any] struct{ m map[K]V }
-
-var CacheStudent Cache[int, Student]
-var CacheObject Cache[int, Object]
-
-func (c *Cache[K, V]) Init() {
-	c.m = make(map[K]V)
-}
-
-func (c *Cache[K, V]) Set(key K, value V) { c.m[key] = value }
-
-func (c *Cache[K, V]) Get(key K) (V, bool) {
-	k, ok := c.m[key]
-	return k, ok
-}
-
 func main() {
 	printResultsTable()
 }
@@ -58,10 +42,30 @@ func printResultsTable() {
 	fmt.Printf("--------------------------------------------\n")
 
 	for _, result := range data.Results {
-		student, _ := CacheStudent.Get(result.StudentId)
-		object, _ := CacheObject.Get(result.ObjectId)
+		student := FilterOne(data.Students, result.StudentId, getStudentById)
+		object := FilterOne(data.Objects, result.ObjectId, getObjectNameById)
+
+		//student := getStudentById(result.StudentId, data.Students)
 		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", student.Name, student.Grade, object.Name, result.Result)
 	}
+}
+
+func FilterOne[T any](s []T, id int, f func(T, int) bool) T {
+	var r T
+	for _, v := range s {
+		if f(v, id) {
+			return v
+		}
+	}
+	return r
+}
+
+func getObjectNameById(object Object, id int) bool {
+	return object.Id == id
+}
+
+func getStudentById(student Student, id int) bool {
+	return student.Id == id
 }
 
 func readFile() Data {
@@ -74,28 +78,9 @@ func readFile() Data {
 
 	decoder := json.NewDecoder(file)
 	var data Data
-
 	err = decoder.Decode(&data)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	CacheStudent.Init()
-	CacheObject.Init()
-
-	for _, student := range data.Students {
-		CacheStudent.Set(student.Id, Student{
-			Id:    student.Id,
-			Name:  student.Name,
-			Grade: student.Grade,
-		})
-	}
-
-	for _, object := range data.Objects {
-		CacheObject.Set(object.Id, Object{
-			Id:   object.Id,
-			Name: object.Name,
-		})
 	}
 
 	return data
