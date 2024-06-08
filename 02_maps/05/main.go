@@ -32,20 +32,19 @@ type Data struct {
 
 type Cache[K comparable, V any] struct{ m map[K]V }
 
-func (c Cache[K, V]) Init() {
+var CacheStudent Cache[int, Student]
+var CacheObject Cache[int, Object]
+
+func (c *Cache[K, V]) Init() {
 	c.m = make(map[K]V)
 }
 
-func (c *Cache[K, V]) Set(key K, value V) {
-	c.m[key] = value
-}
+func (c *Cache[K, V]) Set(key K, value V) { c.m[key] = value }
 
-func (c Cache[K, V]) Get(key K) (V, bool) {
+func (c *Cache[K, V]) Get(key K) (V, bool) {
 	k, ok := c.m[key]
 	return k, ok
 }
-
-var myCache Cache[int, string]
 
 func main() {
 	printResultsTable()
@@ -59,27 +58,10 @@ func printResultsTable() {
 	fmt.Printf("--------------------------------------------\n")
 
 	for _, result := range data.Results {
-		student := getStudentById(result.StudentId, data.Students)
-		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", student.Name, student.Grade, getObjectNameById(result.ObjectId, data.Objects), result.Result)
+		student, _ := CacheStudent.Get(result.StudentId)
+		object, _ := CacheObject.Get(result.ObjectId)
+		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", student.Name, student.Grade, object.Name, result.Result)
 	}
-}
-
-func getObjectNameById(id int, objects []Object) string {
-	for _, object := range objects {
-		if object.Id == id {
-			return object.Name
-		}
-	}
-	return ""
-}
-
-func getStudentById(id int, students []Student) Student {
-	for _, student := range students {
-		if student.Id == id {
-			return student
-		}
-	}
-	return Student{}
 }
 
 func readFile() Data {
@@ -92,22 +74,29 @@ func readFile() Data {
 
 	decoder := json.NewDecoder(file)
 	var data Data
+
 	err = decoder.Decode(&data)
 	if err != nil {
 		log.Fatal(err)
 	}
-	myCache.Init()
-	fmt.Println(myCache)
-	//
 
-	//myCache.Set(1, "val")
-	//
-	//fmt.Printf(myCache.Get(1))
+	CacheStudent.Init()
+	CacheObject.Init()
 
-	//fmt.Printf(studentsCache.Get(25))
-	//for k, v := range data.Students {
-	//	studentsCache.Set(k, v.Name)
-	//}
+	for _, student := range data.Students {
+		CacheStudent.Set(student.Id, Student{
+			Id:    student.Id,
+			Name:  student.Name,
+			Grade: student.Grade,
+		})
+	}
+
+	for _, object := range data.Objects {
+		CacheObject.Set(object.Id, Object{
+			Id:   object.Id,
+			Name: object.Name,
+		})
+	}
 
 	return data
 }
