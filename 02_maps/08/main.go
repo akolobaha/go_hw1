@@ -1,7 +1,5 @@
 package main
 
-type T comparable
-
 func main() {
 
 	arr1 := []int{1, 2, 3, 4, 5, 4, 222}
