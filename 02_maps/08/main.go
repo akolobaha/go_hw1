@@ -1,21 +1,28 @@
 package main
 
-import "fmt"
-
-func Len[T comparable](value []T) int {
-	return len(value)
-}
-
-// дописать метод compare и swap для comparable??
-
-//func isEqualArrays[T myComparable](arr1, arr2 []T) bool {
-//	sort.Sort(T)
-//}
+type T comparable
 
 func main() {
-	arr1 := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	//arr2 := []int{1, 2, 3, 4, 5, 6, 7, 8, 10, 9}
-	//arr3 := []int{1, 3, 4, 5, 6, 7, 8, 10, 9}
 
-	fmt.Println(Len(arr1))
+	arr1 := []int{1, 2, 3, 4, 5, 4, 222}
+	arr2 := []int{4, 1, 2, 3, 5, 5, 222}
+
+	println(isEqualArrays(arr1, arr2))
+}
+
+func isEqualArrays[T comparable](arr1 []T, arr2 []T) bool {
+	return arrInArr(arr1, arr2) && arrInArr(arr2, arr1)
+}
+
+func arrInArr[T comparable](arr1 []T, arr2 []T) bool {
+outer:
+	for i := range arr1 {
+		for j := range arr2 {
+			if arr1[i] == arr2[j] {
+				continue outer
+			}
+		}
+		return false
+	}
+	return true
 }
