@@ -1,9 +1,20 @@
 package main
 
+import "fmt"
+
 type Numbers []int
 
 func main() {
+	arr := Numbers{1, 2, 3, 4, 5}
 
+	fmt.Println(arr.Sum())
+	fmt.Println(arr.Mul())
+	fmt.Println(arr.hasElement(3))
+
+	newArr1 := arr.removeElementByIndex(3)
+	fmt.Println(newArr1)
+	newArr2 := newArr1.removeElementByValue(5)
+	fmt.Println(newArr2)
 }
 
 func (numbers Numbers) Sum() (sum int) {
@@ -13,11 +24,12 @@ func (numbers Numbers) Sum() (sum int) {
 	return
 }
 
-func (numbers Numbers) Mul(res int) {
+func (numbers Numbers) Mul() (res int) {
+	res = 1
 	for _, number := range numbers {
 		res *= number
 	}
-	return
+	return res
 }
 
 func (numbers Numbers) sliceLenIsEqual(toCompare []Numbers) bool {
@@ -34,6 +46,14 @@ func (numbers Numbers) hasElement(arg int) int {
 }
 
 func (numbers Numbers) removeElementByIndex(index int) Numbers {
-	slice := make(int, 40)
-	return append(numbers[:index], numbers[index:])
+	return append(numbers[:index], numbers[index+1:]...)
+}
+
+func (numbers Numbers) removeElementByValue(arg int) Numbers {
+	for i, number := range numbers {
+		if number == arg {
+			return numbers.removeElementByIndex(i)
+		}
+	}
+	return numbers
 }
