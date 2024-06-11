@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 )
 
 const outputFilename = "output.txt"
@@ -12,6 +13,7 @@ func main() {
 	chn := processInput()
 	done := addToFile(chn)
 	<-done
+	fmt.Println("Received signal:", done)
 }
 
 func processInput() chan string {
@@ -33,8 +35,10 @@ func processInput() chan string {
 	return ch
 }
 
-func addToFile(ch <-chan string) chan struct{} {
-	done := make(chan struct{})
+func addToFile(ch <-chan string) chan os.Signal {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt)
+	fmt.Println("Press Ctrl+C to stop")
 
 	// Создаем файл для записи
 	file, err := os.Create(outputFilename)
@@ -62,7 +66,6 @@ func addToFile(ch <-chan string) chan struct{} {
 				return
 			}
 
-			// Сбрасываем буфер и записываем данные на диск
 			err = writer.Flush()
 			if err != nil {
 				fmt.Println("Ошибка при сбросе буфера:", err)
