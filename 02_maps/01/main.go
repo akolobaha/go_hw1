@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	fmt.Println(crossingSlices([]int{1, 2, 3, 2}, []int{3, 2}, []int{}))
+	fmt.Println(crossingSlices([]int{1, 2, 3, 2, 7}, []int{3, 2, 7}, []int{1, 3, 7, 7, 7}))
 }
 
 /*
@@ -15,41 +15,26 @@ func main() {
 Каждый элемент в пересечении должен быть уникальным. Слайс-результат должен быть отсортирован в восходящем порядке.
 */
 func crossingSlices(slices ...[]int) []int {
-	shortestSlide := getShortestSlide(slices...)
 	result := make([]int, 0)
+	resultMap := make(map[int]int)
 
-outerLoop:
-	for _, elem := range shortestSlide {
-		for _, slice := range slices {
-			if !sliceContainsElem(slice, elem) {
-				continue outerLoop
-			}
+	for _, slice := range slices {
+		unique := make(map[int]struct{})
+		for _, value := range slice {
+			unique[value] = struct{}{}
 		}
 
-		if !sliceContainsElem(result, elem) {
-			result = append(result, elem)
+		for key, _ := range unique {
+			resultMap[key]++
 		}
 	}
+
+	for key := range resultMap {
+		if resultMap[key] == len(slices) {
+			result = append(result, key)
+		}
+	}
+
 	sort.Ints(result)
 	return result
-}
-
-func getShortestSlide(slices ...[]int) []int {
-	var minSliceIndex int
-
-	for slice := range slices {
-		if len(slices[slice]) < len(slices[minSliceIndex]) {
-			minSliceIndex = slice
-		}
-	}
-	return slices[minSliceIndex]
-}
-
-func sliceContainsElem(slice []int, elem int) bool {
-	for _, item := range slice {
-		if item == elem {
-			return true
-		}
-	}
-	return false
 }

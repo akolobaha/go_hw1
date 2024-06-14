@@ -30,6 +30,9 @@ type Data struct {
 	Results  []Result  `json:"results"`
 }
 
+var Students = make(map[int]Student)
+var Objects = make(map[int]Object)
+
 func main() {
 
 	printResultsTable()
@@ -50,27 +53,8 @@ func printResultsTable() {
 	fmt.Printf("--------------------------------------------\n")
 
 	for _, result := range data.Results {
-		student := getStudentById(result.StudentId, data.Students)
-		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", student.Name, student.Grade, getObjectNameById(result.ObjectId, data.Objects), result.Result)
+		fmt.Printf("%-12s | %-5d | %-10s | %-6d |\n", Students[result.StudentId].Name, Students[result.StudentId].Grade, Objects[result.ObjectId].Name, result.Result)
 	}
-}
-
-func getObjectNameById(id int, objects []Object) string {
-	for _, object := range objects {
-		if object.Id == id {
-			return object.Name
-		}
-	}
-	return ""
-}
-
-func getStudentById(id int, students []Student) Student {
-	for _, student := range students {
-		if student.Id == id {
-			return student
-		}
-	}
-	return Student{}
 }
 
 func readFile() Data {
@@ -84,6 +68,15 @@ func readFile() Data {
 	decoder := json.NewDecoder(file)
 	var data Data
 	err = decoder.Decode(&data)
+
+	for _, v := range data.Students {
+		Students[v.Id] = v
+	}
+
+	for _, v := range data.Objects {
+		Objects[v.Id] = v
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}

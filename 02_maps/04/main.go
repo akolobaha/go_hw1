@@ -30,6 +30,9 @@ type Data struct {
 	Results  []Result  `json:"results"`
 }
 
+var Students = make(map[int]Student)
+var Objects = make(map[int]Object)
+
 func main() {
 	printAggregatedResultTable()
 }
@@ -47,16 +50,16 @@ type subjectGrade struct {
 func printAggregatedResultTable() {
 	data := readFile()
 
-	subjectsResult := make(map[string]map[int]subjectGrade)
+	subjectsResult := make(map[int]map[int]subjectGrade)
 
 	for _, result := range data.Results {
-		student := getStudentById(result.StudentId, data.Students)
-		objectName := getObjectNameById(result.ObjectId, data.Objects)
+		student := Students[result.StudentId]
+		object := Objects[result.ObjectId]
 
-		value, ok := subjectsResult[objectName]
+		value, ok := subjectsResult[object.Id]
 		if !ok {
 			value = make(map[int]subjectGrade)
-			subjectsResult[objectName] = value
+			subjectsResult[object.Id] = value
 		}
 
 		subjectGradeValue, ok := value[student.Grade]
@@ -74,7 +77,7 @@ func printAggregatedResultTable() {
 
 	for subjectName, subjectData := range subjectsResult {
 		fmt.Printf("----------------------\n")
-		fmt.Printf("%-12s | %-5s |\n", subjectName, "Mean")
+		fmt.Printf("%-12s | %-5s |\n", Objects[subjectName].Name, "Mean")
 		var totalObjGrade float64
 		for gradeNumber, gradeData := range subjectData {
 			avgGrade := avgGrade(gradeData.result)
@@ -82,27 +85,9 @@ func printAggregatedResultTable() {
 			fmt.Printf("%-12d | %-5.1f |\n", gradeNumber, avgGrade)
 		}
 		fmt.Printf("----------------------\n")
-		fmt.Printf("%-12s | %-5.1f |\n", "mean", float64(totalObjGrade)/float64(len(subjectData)))
+		fmt.Printf("%-12s | %-5.1f |\n", "mean", totalObjGrade/float64(len(subjectData)))
 		fmt.Printf("----------------------\n")
 	}
-}
-
-func getObjectNameById(id int, objects []Object) string {
-	for _, object := range objects {
-		if object.Id == id {
-			return object.Name
-		}
-	}
-	return ""
-}
-
-func getStudentById(id int, students []Student) Student {
-	for _, student := range students {
-		if student.Id == id {
-			return student
-		}
-	}
-	return Student{}
 }
 
 func readFile() Data {
@@ -116,6 +101,15 @@ func readFile() Data {
 	decoder := json.NewDecoder(file)
 	var data Data
 	err = decoder.Decode(&data)
+
+	for _, v := range data.Students {
+		Students[v.Id] = v
+	}
+
+	for _, v := range data.Objects {
+		Objects[v.Id] = v
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
