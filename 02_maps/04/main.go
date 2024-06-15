@@ -42,50 +42,31 @@ func main() {
 4. Для предыдущей задачи необходимо вывести сводную таблицу по всем предметам
 */
 
-type subjectGrade struct {
-	grade  int
-	result []int
-}
-
 func printAggregatedResultTable() {
 	data := readFile()
-
-	subjectsResult := make(map[int]map[int]subjectGrade)
+	unanimousResults := make(map[int]map[int][]float64)
 
 	for _, result := range data.Results {
-		student := Students[result.StudentId]
-		object := Objects[result.ObjectId]
-
-		value, ok := subjectsResult[object.Id]
-		if !ok {
-			value = make(map[int]subjectGrade)
-			subjectsResult[object.Id] = value
+		if unanimousResults[result.ObjectId] == nil {
+			unanimousResults[result.ObjectId] = make(map[int][]float64)
 		}
-
-		subjectGradeValue, ok := value[student.Grade]
-		if ok {
-			subjectGradeValue.result = append(subjectGradeValue.result, result.Result)
-		} else {
-			subjectGradeValue = subjectGrade{
-				grade:  student.Grade,
-				result: []int{result.Result},
-			}
-		}
-
-		value[student.Grade] = subjectGradeValue
+		unanimousResults[result.ObjectId][Students[result.StudentId].Grade] = append(unanimousResults[result.ObjectId][Students[result.StudentId].Grade], float64(result.Result))
 	}
 
-	for subjectName, subjectData := range subjectsResult {
+	for objectId, objectResults := range unanimousResults {
 		fmt.Printf("----------------------\n")
-		fmt.Printf("%-12s | %-5s |\n", Objects[subjectName].Name, "Mean")
-		var totalObjGrade float64
-		for gradeNumber, gradeData := range subjectData {
-			avgGrade := avgGrade(gradeData.result)
-			totalObjGrade += avgGrade
-			fmt.Printf("%-12d | %-5.1f |\n", gradeNumber, avgGrade)
+		fmt.Printf("%-12s | %-5s |\n", Objects[objectId].Name, "Mean")
+
+		resultsByObject := make([]float64, 0)
+
+		for grade, results := range objectResults {
+			avgByGrade := avgGrade(results)
+			resultsByObject = append(resultsByObject, results...)
+			fmt.Printf("%-12d | %-5.1f |\n", grade, avgByGrade)
 		}
+
 		fmt.Printf("----------------------\n")
-		fmt.Printf("%-12s | %-5.1f |\n", "mean", totalObjGrade/float64(len(subjectData)))
+		fmt.Printf("%-12s | %-5.1f |\n", "mean", avgGrade(resultsByObject))
 		fmt.Printf("----------------------\n")
 	}
 }
@@ -117,10 +98,15 @@ func readFile() Data {
 	return data
 }
 
-func avgGrade(arr []int) float64 {
-	var result int
+func avgGrade(arr []float64) float64 {
+
+	var result float64
 	for _, value := range arr {
 		result += value
 	}
-	return float64(result) / float64(len(arr))
+
+	if float64(len(arr)) != 0 {
+		return result / float64(len(arr))
+	}
+	return 0
 }

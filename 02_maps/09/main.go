@@ -6,10 +6,13 @@ type Numbers []int
 
 func main() {
 	arr := Numbers{1, 2, 3, 4, 5}
+	arr2 := Numbers{1, 2, 3, 4, 5, 6}
 
 	fmt.Println(arr.Sum())
 	fmt.Println(arr.Mul())
 	fmt.Println(arr.hasElement(3))
+
+	fmt.Println(arr.isEqualArrays(arr2))
 
 	newArr1 := arr.removeElementByIndex(3)
 	fmt.Println(newArr1)
@@ -32,8 +35,29 @@ func (numbers Numbers) Mul() (res int) {
 	return res
 }
 
-func (numbers Numbers) sliceLenIsEqual(toCompare []Numbers) bool {
-	return len(numbers) == len(toCompare)
+func (numbers Numbers) isEqualArrays(toCompare Numbers) bool {
+	resultingMap := make(map[int]bool)
+
+	for i := range numbers {
+		resultingMap[numbers[i]] = false
+	}
+
+	for i := range toCompare {
+		_, ok := resultingMap[toCompare[i]]
+		if !ok {
+			return false
+		} else {
+			resultingMap[toCompare[i]] = true
+		}
+	}
+
+	for _, val := range resultingMap {
+		if !val {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (numbers Numbers) hasElement(arg int) int {

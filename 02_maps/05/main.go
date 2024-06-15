@@ -39,7 +39,9 @@ func (c *Cache[K, V]) Init() {
 	c.m = make(map[K]V)
 }
 
-func (c *Cache[K, V]) Set(key K, value V) { c.m[key] = value }
+func (c *Cache[K, V]) Set(key K, value V) {
+	c.m[key] = value
+}
 
 func (c *Cache[K, V]) Get(key K) (V, bool) {
 	k, ok := c.m[key]
@@ -84,11 +86,7 @@ func readFile() Data {
 	CacheObject.Init()
 
 	for _, student := range data.Students {
-		CacheStudent.Set(student.Id, Student{
-			Id:    student.Id,
-			Name:  student.Name,
-			Grade: student.Grade,
-		})
+		CacheStudent.Set(student.Id, student)
 	}
 
 	for _, object := range data.Objects {

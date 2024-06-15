@@ -9,18 +9,26 @@ func main() {
 }
 
 func isEqualArrays[T comparable](arr1 []T, arr2 []T) bool {
-	return arrInArr(arr1, arr2) && arrInArr(arr2, arr1)
-}
+	resultingMap := make(map[T]bool)
 
-func arrInArr[T comparable](arr1 []T, arr2 []T) bool {
-outer:
 	for i := range arr1 {
-		for j := range arr2 {
-			if arr1[i] == arr2[j] {
-				continue outer
-			}
-		}
-		return false
+		resultingMap[arr1[i]] = false
 	}
+
+	for i := range arr2 {
+		_, ok := resultingMap[arr2[i]]
+		if !ok {
+			return false
+		} else {
+			resultingMap[arr2[i]] = true
+		}
+	}
+
+	for _, val := range resultingMap {
+		if !val {
+			return false
+		}
+	}
+
 	return true
 }
