@@ -2,17 +2,36 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
+	"sync"
 )
 
+type Job struct {
+	id int
+}
+
+func worker(id int, jobs <-chan Job, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for job := range jobs {
+		fmt.Printf("Worker %d processing job %d\n", id, job.id)
+	}
+}
+
 func main() {
+	numWorkers := 3
+	numJobs := 5
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
+	jobs := make(chan Job, numJobs)
+	var wg sync.WaitGroup
 
-	fmt.Println("Press Ctrl+C to stop")
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)
+		go worker(i, jobs, &wg)
+	}
 
-	sig := <-signals
-	fmt.Println("Received signal:", sig)
+	for i := 1; i <= numJobs; i++ {
+		jobs <- Job{id: i}
+	}
+	close(jobs)
+
+	wg.Wait()
 }
