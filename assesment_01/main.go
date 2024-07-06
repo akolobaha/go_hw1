@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"sync"
 	"time"
 )
@@ -18,7 +20,7 @@ type Message struct {
 	Data    string
 }
 
-var ValidTokens = []string{"255", "42", "-1", "-42"}
+var ValidTokens = []string{"correctToken1", "correctToken2", "correctToken3", "correctToken4"}
 var Users = make(map[string]User)
 var Messages = make(chan Message)
 var Cache = make(map[string][]string)
@@ -27,32 +29,44 @@ var CacheMutex sync.RWMutex
 var WriterTickRate time.Duration = 5000 // Срабатывание в ms
 
 func main() {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	go func() {
+		select {
+
+		case <-quit:
+			cancel()
+			fmt.Println("Ctrl + C pressed, canceling context")
+		}
+	}()
+
 	wg := sync.WaitGroup{}
 
-	AddUser(User{"42", "file42.txt"})
-	AddUser(User{"-42", "file-42.txt"})
-	AddUser(User{"255", "file-255.txt"})
+	AddUser(User{"correctToken1", "file1.txt"})
+	AddUser(User{"correctToken2", "file2.txt"})
+	AddUser(User{"correctToken3", "file3.txt"})
 
 	go WriteMsg2Cache(&wg)
 
-	go WriteFiles(&wg)
+	go WriteFiles(ctx, &wg)
 
 	SendMsg("123456789", "test message", &wg)
-	SendMsg("42", "test message", &wg)
+	SendMsg("correctToken1", "test message", &wg)
+	SendMsg("correctToken1", "file2", &wg)
+	SendMsg("correctToken2", "test message 42", &wg)
+	SendMsg("correctToken2", "test message 255", &wg)
 	SendMsg("42", "file2", &wg)
-	SendMsg("255", "test message 42", &wg)
-	SendMsg("255", "test message 255", &wg)
-	SendMsg("42", "file2", &wg)
-	SendMsg("421", "!!", &wg)
-	SendMsg("42", "test message", &wg)
+	SendMsg("correctToken3", "!!", &wg)
+	SendMsg("correctToken3", "test message", &wg)
 	SendMsg("-42", "-42 message", &wg)
 	//SendMsg("42", "test message", &wg)
-	SendMsg("-42", "test message", &wg)
+	SendMsg("correctToken4", "test message", &wg)
 	SendMsg("42", "test message", &wg)
 
 	wg.Wait()
 
-	fmt.Println(Cache)
 }
 
 func AddUser(user User) {
@@ -90,7 +104,32 @@ func WriteMsg2Cache(wg *sync.WaitGroup) {
 	return
 }
 
-func WriteFiles(wg *sync.WaitGroup) {
+func WriteItemToFile(wg *sync.WaitGroup) {
+	CacheMutex.Lock()
+	for fieldID, data := range Cache {
+		file, err := os.OpenFile(fieldID, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			fmt.Println("Error creating file:", err)
+			return
+		}
+
+		for _, str := range data {
+			_, err = file.WriteString(str + "\n")
+			if err != nil {
+				fmt.Println("Error writing to file:", err)
+				return
+			}
+		}
+
+		file.Close()
+
+		delete(Cache, fieldID)
+	}
+	CacheMutex.Unlock()
+	wg.Done()
+}
+
+func WriteFiles(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	time.Sleep(1000 * time.Millisecond)
 
@@ -99,30 +138,11 @@ func WriteFiles(wg *sync.WaitGroup) {
 
 	for {
 		select {
+		case <-ctx.Done():
+			WriteItemToFile(wg)
+			return
 		case <-ticker.C:
-			CacheMutex.Lock()
-			for fieldID, data := range Cache {
-				file, err := os.OpenFile(fieldID, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-				if err != nil {
-					fmt.Println("Error creating file:", err)
-					return
-				}
-
-				for _, str := range data {
-					_, err = file.WriteString(str + "\n")
-					if err != nil {
-						fmt.Println("Error writing to file:", err)
-						return
-					}
-				}
-
-				file.Close()
-				fmt.Println(Cache)
-
-				delete(Cache, fieldID)
-			}
-			CacheMutex.Unlock()
-			wg.Done()
+			WriteItemToFile(wg)
 		}
 	}
 }
