@@ -104,7 +104,6 @@ func TestHighLoad(t *testing.T) {
 	for i := range 1000000 {
 		tokenIndex := i % len(ValidTokens)
 		SendMsg(ValidTokens[tokenIndex], generateMD5Hash(time.Now().String()))
-
 	}
 
 	SendMsg("correctToken1", "test message")

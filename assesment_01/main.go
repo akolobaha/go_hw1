@@ -28,12 +28,13 @@ var ValidTokens = []string{"correctToken1", "correctToken2", "correctToken3", "c
 var Users = make(map[string]User)
 var Messages = make(chan Message, 100)
 var Cache = make(map[string][]string)
+
 var CacheMutex sync.RWMutex
 var MessagesMutex sync.RWMutex
 
 var done = make(chan struct{})
 
-var WriterTickRate time.Duration = 3000 // Срабатывание в ms
+var WriterTickRate time.Duration = 5000 // Срабатывание в ms
 
 func main() {
 	f, _ := os.Create("trace.out")
@@ -60,7 +61,7 @@ func main() {
 
 	go WriteMsg2Cache()
 
-	WriterScale(ctx, done)
+	go WriterScale(ctx, done)
 
 	SendMsg("123456789", "test message")
 	SendMsg("correctToken1", "test message")
@@ -117,8 +118,6 @@ func WriteMsg2Cache() {
 }
 
 func WriteItemToFile(done chan<- struct{}) {
-
-	// Балансировщик: поймать количество, если оно возрастет - замасштабировать
 	CacheMutex.RLock()
 	for fieldID, data := range Cache {
 		file, err := os.OpenFile(fieldID, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
@@ -127,10 +126,17 @@ func WriteItemToFile(done chan<- struct{}) {
 			return
 		}
 
+		var writeSuccess bool
 		for _, str := range data {
-			_, err = file.WriteString(str + "\n")
-			if err != nil {
-				// fmt.Println("Error writing to file:", err)
+			for i := 0; i < 3; i++ {
+				_, err = file.WriteString(str + "\n")
+				if err == nil {
+					writeSuccess = true
+					break
+				}
+				time.Sleep(time.Second)
+			}
+			if !writeSuccess {
 				return
 			}
 		}
@@ -144,36 +150,24 @@ func WriteItemToFile(done chan<- struct{}) {
 }
 
 func WriterScale(ctx context.Context, done chan<- struct{}) {
-
-	go Writer(ctx, done)
 	go Writer(ctx, done)
 }
 
 func Writer(ctx context.Context, done chan<- struct{}) {
-
 	ticker := time.NewTicker(WriterTickRate * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			// определим количество пришедших в кэш данных на моменте старта и запустим исходя из этого количества
 			CacheMutex.RLock()
-			for fieldID, data := range Cache {
-				fmt.Println(fieldID, len(data))
-			}
 			go WriteItemToFile(done)
 			CacheMutex.RUnlock()
-
 			return
 		case <-ticker.C:
 			CacheMutex.RLock()
-			for fieldID, data := range Cache {
-				fmt.Println(fieldID, len(data))
-			}
 			go WriteItemToFile(done)
 			CacheMutex.RUnlock()
-
 		}
 
 	}
@@ -191,12 +185,4 @@ func TokenIsValid(token string) bool {
 func generateMD5Hash(data string) string {
 	hash := md5.Sum([]byte(data))
 	return hex.EncodeToString(hash[:])
-}
-
-func getCacheLen() int {
-	var result int
-	for _, data := range Cache {
-		result += len(data)
-	}
-	return result
 }
