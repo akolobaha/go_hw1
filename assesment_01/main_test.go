@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"testing"
 	"time"
 )
@@ -22,27 +21,27 @@ func TestSuccessResults(t *testing.T) {
 		}
 	}()
 
-	wg := sync.WaitGroup{}
+	done := make(chan struct{})
 
 	AddUser(User{"correctToken1", "file1.txt"})
 	AddUser(User{"correctToken2", "file2.txt"})
 	AddUser(User{"correctToken3", "file3.txt"})
 
-	go WriteMsg2Cache(&wg)
+	go WriteMsg2Cache()
 
-	go Writer(ctx, &wg)
+	go Writer(ctx, done)
 
-	SendMsg("correctToken1", "test message", &wg)
-	SendMsg("correctToken1", "file2", &wg)
-	SendMsg("correctToken3", "test message 42", &wg)
-	SendMsg("correctToken3", "test message 255", &wg)
-	SendMsg("correctToken1", "file2", &wg)
-	SendMsg("correctToken1", "test message", &wg)
-	SendMsg("correctToken2", "-42 message", &wg)
-	SendMsg("correctToken2", "test message", &wg)
-	SendMsg("correctToken1", "test message", &wg)
+	SendMsg("correctToken1", "test message")
+	SendMsg("correctToken1", "file2")
+	SendMsg("correctToken3", "test message 42")
+	SendMsg("correctToken3", "test message 255")
+	SendMsg("correctToken1", "file2")
+	SendMsg("correctToken1", "test message")
+	SendMsg("correctToken2", "-42 message")
+	SendMsg("correctToken2", "test message")
+	SendMsg("correctToken1", "test message")
 
-	wg.Wait()
+	<-done
 }
 
 func TestWrongTokens(t *testing.T) {
@@ -57,27 +56,27 @@ func TestWrongTokens(t *testing.T) {
 		}
 	}()
 
-	wg := sync.WaitGroup{}
+	done := make(chan struct{})
 
 	AddUser(User{"correctToken1", "file1.txt"})
 	AddUser(User{"correctToken2", "file2.txt"})
 	AddUser(User{"correctToken3", "file3.txt"})
 
-	go WriteMsg2Cache(&wg)
+	go WriteMsg2Cache()
 
-	go Writer(ctx, &wg)
+	go Writer(ctx, done)
 
-	SendMsg("safasf", "test message", &wg)
-	SendMsg("asfasf", "file2", &wg)
-	SendMsg("vdzvsdv", "test message 42", &wg)
-	SendMsg("asfasf", "test message 255", &wg)
-	SendMsg("asdfasf", "file2", &wg)
-	SendMsg("asfasdf", "test message", &wg)
-	SendMsg("asfdasf", "-42 message", &wg)
-	SendMsg("asdfasdf", "test message", &wg)
-	SendMsg("asdfasdfasdf", "test message", &wg)
+	SendMsg("safasf", "test message")
+	SendMsg("asfasf", "file2")
+	SendMsg("vdzvsdv", "test message 42")
+	SendMsg("asfasf", "test message 255")
+	SendMsg("asdfasf", "file2")
+	SendMsg("asfasdf", "test message")
+	SendMsg("asfdasf", "-42 message")
+	SendMsg("asdfasdf", "test message")
+	SendMsg("asdfasdfasdf", "test message")
 
-	wg.Wait()
+	<-done
 }
 
 func TestHighLoad(t *testing.T) {
@@ -92,31 +91,31 @@ func TestHighLoad(t *testing.T) {
 		}
 	}()
 
-	wg := sync.WaitGroup{}
+	done := make(chan struct{})
 
 	AddUser(User{"correctToken1", "file1.txt"})
 	AddUser(User{"correctToken2", "file2.txt"})
 	AddUser(User{"correctToken3", "file3.txt"})
 
-	go WriteMsg2Cache(&wg)
+	go WriteMsg2Cache()
 
-	go Writer(ctx, &wg)
+	go Writer(ctx, done)
 
-	for i := range 5000 {
+	for i := range 1000000 {
 		tokenIndex := i % len(ValidTokens)
-		SendMsg(ValidTokens[tokenIndex], generateMD5Hash(time.Now().String()), &wg)
+		SendMsg(ValidTokens[tokenIndex], generateMD5Hash(time.Now().String()))
 
 	}
 
-	SendMsg("correctToken1", "test message", &wg)
-	SendMsg("correctToken1", "file2", &wg)
-	SendMsg("correctToken3", "test message 42", &wg)
-	SendMsg("correctToken3", "test message 255", &wg)
-	SendMsg("correctToken1", "file2", &wg)
-	SendMsg("correctToken1", "test message", &wg)
-	SendMsg("correctToken2", "-42 message", &wg)
-	SendMsg("correctToken2", "test message", &wg)
-	SendMsg("correctToken1", "test message", &wg)
+	SendMsg("correctToken1", "test message")
+	SendMsg("correctToken1", "file2")
+	SendMsg("correctToken3", "test message 42")
+	SendMsg("correctToken3", "test message 255")
+	SendMsg("correctToken1", "file2")
+	SendMsg("correctToken1", "test message")
+	SendMsg("correctToken2", "-42 message")
+	SendMsg("correctToken2", "test message")
+	SendMsg("correctToken1", "test message")
 
-	wg.Wait()
+	<-done
 }
