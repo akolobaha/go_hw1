@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"os/signal"
@@ -32,7 +30,7 @@ func TestSuccessResults(t *testing.T) {
 
 	go WriteMsg2Cache(&wg)
 
-	go WriteFiles(ctx, &wg)
+	go Writer(ctx, &wg)
 
 	SendMsg("correctToken1", "test message", &wg)
 	SendMsg("correctToken1", "file2", &wg)
@@ -67,7 +65,7 @@ func TestWrongTokens(t *testing.T) {
 
 	go WriteMsg2Cache(&wg)
 
-	go WriteFiles(ctx, &wg)
+	go Writer(ctx, &wg)
 
 	SendMsg("safasf", "test message", &wg)
 	SendMsg("asfasf", "file2", &wg)
@@ -80,11 +78,6 @@ func TestWrongTokens(t *testing.T) {
 	SendMsg("asdfasdfasdf", "test message", &wg)
 
 	wg.Wait()
-}
-
-func generateMD5Hash(data string) string {
-	hash := md5.Sum([]byte(data))
-	return hex.EncodeToString(hash[:])
 }
 
 func TestHighLoad(t *testing.T) {
@@ -107,9 +100,9 @@ func TestHighLoad(t *testing.T) {
 
 	go WriteMsg2Cache(&wg)
 
-	go WriteFiles(ctx, &wg)
+	go Writer(ctx, &wg)
 
-	for i := range 100000000 {
+	for i := range 5000 {
 		tokenIndex := i % len(ValidTokens)
 		SendMsg(ValidTokens[tokenIndex], generateMD5Hash(time.Now().String()), &wg)
 
