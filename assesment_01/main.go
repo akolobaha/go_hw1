@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"runtime/trace"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -19,32 +19,27 @@ type User struct {
 }
 
 type Message struct {
-	Token   string
-	FieldID string
-	Data    string
+	Token  string
+	FileID string
+	Data   string
 }
 
 var ValidTokens = []string{"correctToken1", "correctToken2", "correctToken3", "correctToken4"}
 var Users = make(map[string]User)
-var Messages = make(chan Message, 100)
-var Cache = make(map[string][]string)
-
-var CacheMutex sync.RWMutex
-var MessagesMutex sync.RWMutex
-
+var Messages = make(chan Message, 100000)
+var WorkersCount int32 = 1
 var done = make(chan struct{})
 
-var WriterTickRate time.Duration = 5000 // Срабатывание в ms
+var ScaleFactor int = 10          // Коэффицент масштабинования (Сообщений на воркер)
+var TickRate time.Duration = 1000 // Задержка воркера ms
 
 func main() {
 	f, _ := os.Create("trace.out")
 	trace.Start(f)
 	defer trace.Stop()
-
 	debug.SetGCPercent(500)
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	go func() {
@@ -58,31 +53,57 @@ func main() {
 	AddUser(User{"correctToken1", "file1.txt"})
 	AddUser(User{"correctToken2", "file2.txt"})
 	AddUser(User{"correctToken3", "file3.txt"})
+	AddUser(User{"correctToken4", "file4.txt"})
 
-	go WriteMsg2Cache()
-
-	go WriterScale(ctx, done)
-
-	SendMsg("123456789", "test message")
-	SendMsg("correctToken1", "test message")
-	SendMsg("correctToken1", "file2")
-	SendMsg("correctToken2", "test message 42")
-	SendMsg("correctToken2", "test message 255")
-	SendMsg("42", "file2")
-	SendMsg("correctToken3", "!!")
-	SendMsg("correctToken3", "test message")
-	SendMsg("-42", "-42 message")
-	//SendMsg("42", "test message")
-	SendMsg("correctToken4", "test message")
-	SendMsg("correctToken3", "test message")
-
-	for i := range 1000000 {
+	for i := range 100 {
 		tokenIndex := i % len(ValidTokens)
 		SendMsg(ValidTokens[tokenIndex], generateMD5Hash(time.Now().String()))
-
 	}
 
+	Worker(ctx, cancel)
+
 	<-done
+	fmt.Println("Done")
+}
+
+func Worker(ctx context.Context, cancelFunc context.CancelFunc) {
+	go func() {
+		ticker := time.NewTicker(TickRate * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				if len(Messages) > 0 {
+					message := <-Messages
+					fmt.Println("Запись в файл: ", message.Data, message.FileID)
+					WriteMessageToFile(message)
+				} else {
+					done <- struct{}{}
+					cancelFunc()
+				}
+			case <-ticker.C:
+				currentWorkers := atomic.LoadInt32(&WorkersCount)
+				requiredWorkers := len(Messages) / ScaleFactor
+
+				if currentWorkers < int32(requiredWorkers) {
+					atomic.AddInt32(&WorkersCount, 1)
+					Worker(ctx, cancelFunc)
+					fmt.Println("Воркер замасштабировался до ", atomic.LoadInt32(&WorkersCount))
+				}
+
+				if len(Messages) > 0 {
+					message := <-Messages
+					fmt.Println("Запись в файл: ", message.Data, message.FileID)
+					WriteMessageToFile(message)
+				} else {
+					done <- struct{}{}
+					cancelFunc()
+				}
+			}
+
+		}
+	}()
 }
 
 func AddUser(user User) {
@@ -96,10 +117,8 @@ func SendMsg(token string, message string) {
 		if TokenIsValid(token) {
 			user, ok := Users[token]
 			if ok {
-				MessagesMutex.Lock()
-				message := Message{Token: user.Token, FieldID: user.File, Data: message}
+				message := Message{Token: user.Token, FileID: user.File, Data: message}
 				Messages <- message
-				MessagesMutex.Unlock()
 			}
 		}
 
@@ -107,70 +126,28 @@ func SendMsg(token string, message string) {
 	}()
 }
 
-func WriteMsg2Cache() {
-	for msg := range Messages {
-		CacheMutex.Lock()
-		Cache[msg.FieldID] = append(Cache[msg.FieldID], msg.Data)
-		CacheMutex.Unlock()
+func WriteMessageToFile(message Message) {
+	file, err := os.OpenFile(message.FileID, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return
 	}
 
-	return
-}
-
-func WriteItemToFile(done chan<- struct{}) {
-	CacheMutex.RLock()
-	for fieldID, data := range Cache {
-		file, err := os.OpenFile(fieldID, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			// fmt.Println("Error creating file:", err)
-			return
+	// retry
+	var writeSuccess bool
+	for i := 0; i < 10; i++ {
+		_, err = file.WriteString(message.Data + "\n")
+		if err == nil {
+			writeSuccess = true
+			break
 		}
-
-		var writeSuccess bool
-		for _, str := range data {
-			for i := 0; i < 3; i++ {
-				_, err = file.WriteString(str + "\n")
-				if err == nil {
-					writeSuccess = true
-					break
-				}
-				time.Sleep(time.Second)
-			}
-			if !writeSuccess {
-				return
-			}
-		}
-
-		file.Close()
-
-		delete(Cache, fieldID)
+		fmt.Println("Конфликт при записи")
+		time.Sleep(10 * time.Millisecond)
 	}
-	done <- struct{}{}
-	CacheMutex.RLock()
-}
-
-func WriterScale(ctx context.Context, done chan<- struct{}) {
-	go Writer(ctx, done)
-}
-
-func Writer(ctx context.Context, done chan<- struct{}) {
-	ticker := time.NewTicker(WriterTickRate * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			CacheMutex.RLock()
-			go WriteItemToFile(done)
-			CacheMutex.RUnlock()
-			return
-		case <-ticker.C:
-			CacheMutex.RLock()
-			go WriteItemToFile(done)
-			CacheMutex.RUnlock()
-		}
-
+	if !writeSuccess {
+		return
 	}
+
+	file.Close()
 }
 
 func TokenIsValid(token string) bool {
@@ -182,6 +159,9 @@ func TokenIsValid(token string) bool {
 	return false
 }
 
+/*
+Моковая строка
+*/
 func generateMD5Hash(data string) string {
 	hash := md5.Sum([]byte(data))
 	return hex.EncodeToString(hash[:])
