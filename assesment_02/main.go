@@ -5,57 +5,89 @@ import (
 	"fmt"
 )
 
-func dfs(graph [][]int, visited []bool, start int) {
-	fmt.Printf("%d ", start)
-	visited[start] = true
-
-	for i := 0; i < len(graph[start]); i++ {
-		if graph[start][i] > 0 && !visited[i] {
-			dfs(graph, visited, i)
-		}
-	}
-}
-
 func main() {
-	mtx1 := [][]int{
-		{0, 1, 3, 0, 0},
-		{1, 0, 0, 1, 1},
-		{3, 0, 0, 0, 0},
-		{0, 1, 0, 0, 0},
-		{0, 1, 0, 0, 0},
+
+	mtx0 := [][]int{
+		{0, 2, 3, 0, 0, 0},
+		{2, 0, 0, 1, 1, 0},
+		{3, 0, 0, 0, 0, 0},
+		{0, 1, 0, 0, 0, 0},
+		{0, 1, 0, 0, 0, 7},
+		{0, 0, 0, 0, 7, 0},
 	}
 
-	fmt.Println(validate(mtx1, []int{4, 1, 0}))
-
-	fmt.Println(calMaxGrade(mtx1))
+	fmt.Println(calMaxGrade(mtx0))
+	fmt.Println(calcUserGrade(mtx0, []int{4, 5}))
 }
 
-func traverseGraph(matrix [][]int) {
-	visited := make([]bool, len(matrix))
-	stack := []int{0}
+func calcUserGrade(matrix [][]int, userAnswer []int) (int, error) {
+	_, err := validateBoth(matrix, userAnswer)
+	if err != nil {
+		return 0, err
+	}
 
-	for len(stack) > 0 {
-		node := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
+	sum := 0
+	for i := 0; i < len(userAnswer)-1; i++ {
+		from := userAnswer[i]
+		to := userAnswer[i+1]
+		sum += matrix[from][to]
+	}
+	return sum, nil
+}
 
-		if !visited[node] {
-			visited[node] = true
-			//fmt.Println(node)
+func calMaxGrade(matrix [][]int) (int, error) {
+	_, err := validateMatrix(matrix)
+	if err != nil {
+		return 0, err
+	}
 
-			for i := 0; i < len(matrix[node]); i++ {
-				if matrix[node][i] > 0 && !visited[i] {
-					stack = append(stack, i)
-				} else {
-					fmt.Printf("%d ", node)
-				}
-			}
+	result := 0
+
+	for startVertex := 0; startVertex < len(matrix); startVertex++ {
+		maxSum := 0
+		visited := make([]bool, len(matrix))
+		visited[startVertex] = true
+		calculatePath(matrix, visited, startVertex, 0, &maxSum)
+		if maxSum > result {
+			result = maxSum
+		}
+	}
+
+	return result, nil
+}
+
+func calculatePath(graph [][]int, visited []bool, current int, sum int, maxSum *int) {
+	if sum > *maxSum {
+		*maxSum = sum
+	}
+
+	for i := 0; i < len(graph[current]); i++ {
+		if graph[current][i] != 0 && !visited[i] {
+			visited[i] = true
+			calculatePath(graph, visited, i, sum+graph[current][i], maxSum)
+			visited[i] = false
 		}
 	}
 }
 
-func validate(matrix [][]int, slice []int) (bool, error) {
+func validateMatrix(matrix [][]int) (bool, error) {
+	err := error(nil)
+	_, err = matrixIsSquare(matrix)
+	if err != nil {
+		return false, err
+	}
 
-	_, err := answerLength(matrix, slice)
+	_, err = matrixNoLoop(matrix)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func validateBoth(matrix [][]int, slice []int) (bool, error) {
+	err := error(nil)
+	_, err = answerLength(matrix, slice)
 	if err != nil {
 		return false, err
 	}
@@ -63,11 +95,11 @@ func validate(matrix [][]int, slice []int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_, err = matrixNoLoop(matrix)
+	_, err = matrixIsSquare(matrix)
 	if err != nil {
 		return false, err
 	}
-	_, err = matrixIsSquare(matrix)
+	_, err = matrixNoLoop(matrix)
 	if err != nil {
 		return false, err
 	}
@@ -111,51 +143,21 @@ func matrixIsSquare(matrix [][]int) (bool, error) {
 	return true, nil
 }
 
-func calMaxGrade(matrix [][]int) int {
-	startVertex := 0
-	visited := make([]bool, len(matrix))
-	visited[startVertex] = true
-	maxSum := 0
-
-	findMaxPath(matrix, visited, startVertex, 0, &maxSum)
-
-	return maxSum
-}
-
-func findMaxPath(graph [][]int, visited []bool, current int, sum int, maxSum *int) {
-	if sum > *maxSum {
-		*maxSum = sum
-	}
-
-	for i := 0; i < len(graph[current]); i++ {
-		if graph[current][i] != 0 && !visited[i] {
-			visited[i] = true
-			findMaxPath(graph, visited, i, sum+graph[current][i], maxSum)
-			visited[i] = false
-		}
-	}
-}
-
-// Реализовать стек
-// Использовать стек для алгоритма поиска вглубину
-// Найти как сохранить графа
-// Максимальный балл
-
-// Получили переданную матрицы, записали ее в память виде графа
-// Делаем обход графа
-// Сопостовляем стоимости ребер графа с переданным вариантом ответа
-
-func EvalSequence(matrix [][]int, userAnswer []int) int {
-
+func EvalSequence(matrix [][]int, userAnswer []int) (int, error) {
 	// validation
-	maxGrade := calMaxGrade(matrix)
-	userGrade := calcUserGrade(matrix, userAnswer)
+	maxGrade, err := calMaxGrade(matrix)
+
+	if err != nil {
+		return 0, err
+	}
+
+	userGrade, err := calcUserGrade(matrix, userAnswer)
+
+	if err != nil {
+		return 0, err
+	}
 
 	percent := userGrade * 100 / maxGrade
 
-	return percent
-}
-
-func calcUserGrade(matrix [][]int, userAnswer []int) int {
-	return 0
+	return percent, nil
 }

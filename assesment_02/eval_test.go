@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -20,10 +19,18 @@ func TestEvalSequence(t *testing.T) {
 		{0, 1, 0, 0, 0},
 	}
 
+	mtxWrong := [][]int{
+		{0, 2, 3, 0, 0},
+		{2, 0, 0, 1, 1},
+		{3, 0, 0, 0, 0},
+		{0, 1, 0, 0, 0},
+	}
+
 	tests := []struct {
-		name string
-		args args
-		want int
+		name      string
+		args      args
+		want      int
+		wantError bool
 	}{
 		{
 			name: "mtx 5 verticals 100%",
@@ -31,7 +38,8 @@ func TestEvalSequence(t *testing.T) {
 				mtx: mtx1,
 				ua:  []int{4, 1, 0, 2},
 			},
-			want: 100,
+			want:      100,
+			wantError: false,
 		},
 		{
 			name: "mtx 5 verticals 0%",
@@ -39,7 +47,8 @@ func TestEvalSequence(t *testing.T) {
 				mtx: mtx1,
 				ua:  []int{},
 			},
-			want: 0,
+			want:      0,
+			wantError: false,
 		},
 		{
 			name: "mtx 5 verticals 50%",
@@ -47,15 +56,25 @@ func TestEvalSequence(t *testing.T) {
 				mtx: mtx1,
 				ua:  []int{4, 1, 0},
 			},
-			want: 50,
+			want:      50,
+			wantError: false,
+		},
+		{
+			name: "mtx wrong",
+			args: args{
+				mtx: mtxWrong,
+				ua:  []int{4, 1, 0},
+			},
+			want:      50,
+			wantError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := EvalSequence(tt.args.mtx, tt.args.ua)
-			assert.Equal(t, tt.want, got)
+			got, err := EvalSequence(tt.args.mtx, tt.args.ua)
+			if (err != nil) != tt.wantError {
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
-eval_test.go
-eval_test.go. На экране.
