@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
+	"sync"
 )
 
-var url = "localhost:9999"
+var url = "localhost:8080"
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello World")
@@ -15,10 +15,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	//go server()
+	wg := &sync.WaitGroup{}
+	client(wg)
 
-	client()
-
-	time.Sleep(5 * time.Second)
 }
 
 //func server() {
@@ -30,9 +29,12 @@ func main() {
 //	}
 //}
 
-func client() {
+func client(wg *sync.WaitGroup) {
 	for range 10 {
-		func() {
+		go func() {
+			defer wg.Done()
+
+			wg.Add(1)
 			resp, err := http.Get("http://" + url)
 			if err != nil {
 				panic(err)
@@ -44,4 +46,6 @@ func client() {
 			fmt.Println(resp.StatusCode, string(body))
 		}()
 	}
+
+	wg.Wait()
 }
