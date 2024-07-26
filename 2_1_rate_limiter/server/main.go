@@ -9,7 +9,6 @@ import (
 var url = "localhost:8080"
 var limit = 10
 
-// RateLimiter для управления одновременными запросами
 type RateLimiter struct {
 	semaphore chan struct{}
 }

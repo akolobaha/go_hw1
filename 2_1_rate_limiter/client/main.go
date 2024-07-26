@@ -11,7 +11,6 @@ var url = "localhost:8080"
 var requests = 30
 
 func main() {
-	//go server()
 	wg := &sync.WaitGroup{}
 	client(wg)
 
