@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-var url = "localhost:8080"
-var limit = 10
+const url = "localhost:8080"
+const limit = 10
 
 type RateLimiter struct {
 	semaphore chan struct{}
