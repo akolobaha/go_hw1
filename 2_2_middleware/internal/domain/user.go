@@ -15,13 +15,15 @@ type User struct {
 	Role     string             `json:"role"`
 	Active   bool               `json:"active"`
 	Age      int                `json:"age"`
+	Email    string             `json:"email"`
 }
 
 type UserInfo struct {
-	ID   primitive.ObjectID `json:"id"`
-	Name string             `json:"name"`
-	Age  int                `json:"age"`
-	Role string             `json:"role"`
+	ID    primitive.ObjectID `json:"id"`
+	Name  string             `json:"name"`
+	Age   int                `json:"age"`
+	Role  string             `json:"role"`
+	Email string             `json:"email"`
 }
 
 type UserRole struct {
@@ -34,12 +36,23 @@ type UserPassword struct {
 	Password string             `json:"password"`
 }
 
+type UserResetPassword struct {
+	ID       primitive.ObjectID `json:"id"`
+	Username string             `json:"username"`
+}
+
 type LoginPassword struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 type UserToken struct {
 	UserId primitive.ObjectID `json:"id"`
 	Token  string             `json:"token"`
+}
+
+type UserMessage struct {
+	UserId  primitive.ObjectID `json:"id"`
+	Message string             `json:"message"`
 }

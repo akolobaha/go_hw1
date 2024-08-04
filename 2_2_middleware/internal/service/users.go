@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"math/rand"
 	"time"
 )
 
@@ -31,6 +32,7 @@ func SignUp(lp *domain.LoginPassword) (*domain.UserToken, error) {
 		Login:    lp.Login,
 		Password: hash(lp.Password),
 		Role:     domain.UserRoleDefault,
+		Email:    lp.Email,
 	}
 
 	if err := users.SetUser(&newUser); err != nil {
@@ -77,6 +79,36 @@ func SignIn(lp *domain.LoginPassword) (*domain.UserToken, error) {
 	}, nil
 }
 
+func ResetPassword(lp *domain.LoginPassword) (*domain.UserMessage, error) {
+
+	userId, ok := users.CheckExistLogin(lp.Login)
+	if !ok {
+		return nil, errors.New("user not found")
+	}
+
+	user, err := users.GetUser(*userId)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Password != hash(lp.Password) {
+		return nil, errors.New("wrong password")
+	}
+	if user.Email == "" {
+		return nil, errors.New("email is empty")
+	}
+
+	newRandPassword := hash(user.Password[:rand.Intn(64)])[:6]
+	user.Password = hash(newRandPassword)
+
+	sendEmail(user.Email, "Новый пароль", newRandPassword)
+
+	return &domain.UserMessage{
+		UserId:  *userId,
+		Message: "Новый пароль отправлен на email: " + user.Email,
+	}, nil
+}
+
 func SetUserInfo(ui *domain.UserInfo) error {
 
 	user, err := users.GetUser(ui.ID)
@@ -86,6 +118,7 @@ func SetUserInfo(ui *domain.UserInfo) error {
 
 	user.Name = ui.Name
 	user.Age = ui.Age
+	user.Email = ui.Email
 
 	return users.SetUser(user)
 
@@ -124,10 +157,11 @@ func GetUserShortInfo(id primitive.ObjectID) (*domain.UserInfo, error) {
 	}
 
 	ui := domain.UserInfo{
-		ID:   user.ID,
-		Name: user.Name,
-		Age:  user.Age,
-		Role: user.Role,
+		ID:    user.ID,
+		Name:  user.Name,
+		Age:   user.Age,
+		Role:  user.Role,
+		Email: user.Email,
 	}
 
 	return &ui, nil

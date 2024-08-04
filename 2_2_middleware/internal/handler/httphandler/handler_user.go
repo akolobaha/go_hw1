@@ -70,6 +70,37 @@ func SignIn(resp http.ResponseWriter, req *http.Request) {
 	respBody.SetData(userToken)
 }
 
+func ResetPassword(resp http.ResponseWriter, req *http.Request) {
+
+	respBody := &HTTPResponse{}
+	defer func() {
+		resp.Write(respBody.Marshall())
+	}()
+
+	var input domain.LoginPassword
+	if err := readBody(req, &input); err != nil {
+		resp.WriteHeader(http.StatusUnprocessableEntity)
+		respBody.SetError(err)
+		return
+	}
+
+	if !input.IsValid() {
+		resp.WriteHeader(http.StatusBadRequest)
+		respBody.SetError(errors.New("invalid input"))
+		return
+	}
+
+	userMessage, err := service.ResetPassword(&input)
+
+	if err != nil {
+		resp.WriteHeader(http.StatusNotFound)
+		respBody.SetError(err)
+		return
+	}
+
+	respBody.SetData(userMessage)
+}
+
 func GetUserInfo(resp http.ResponseWriter, req *http.Request) {
 
 	respBody := &HTTPResponse{}
@@ -112,9 +143,10 @@ func SetUserInfo(resp http.ResponseWriter, req *http.Request) {
 	userID, _ := primitive.ObjectIDFromHex(req.Header.Get(HeaderUserID))
 
 	if err := service.SetUserInfo(&domain.UserInfo{
-		ID:   userID,
-		Name: input.Name,
-		Age:  input.Age,
+		ID:    userID,
+		Name:  input.Name,
+		Age:   input.Age,
+		Email: input.Email,
 	}); err != nil {
 		resp.WriteHeader(http.StatusNotFound)
 		respBody.SetError(err)

@@ -1,5 +1,6 @@
-@login = "login3"
+@login = "login10"
 @password = "password"
+@email = "xp_89@mail.ru"
 
 ### Создание пользователя
 POST localhost:8000/sign_up
@@ -7,7 +8,8 @@ Content-Type: application/json
 
 {
   "login": {{login}},
-  "password": {{password}}
+  "password": {{password}},
+  "email": "xp_89@mail.ru"
 }
 > {% client.global.set("auth_token", response.body.data.token); %}
 
@@ -22,6 +24,15 @@ Content-Type: application/json
 }
 
 > {% client.global.set("auth_token", response.body.data.token); %}
+
+### Сброс пароля (сгенерируется)
+POST localhost:8000/reset_password
+Content-Type: application/json
+
+{
+  "login": {{login}},
+  "password": {{password}}
+}
 
 
 ### Инфа о себе
@@ -44,7 +55,8 @@ Authorization: {{auth_token}}
 {
   "name": "world33321111",
   "active": true,
-  "age": 25
+  "age": 25,
+  "email": "xp_89@mail.ru"
 }
 
 ### Обновление роли
@@ -55,3 +67,4 @@ Authorization: {{auth_token}}
 {
   "role": "admin"
 }
+

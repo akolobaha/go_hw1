@@ -3,8 +3,9 @@ package httphandler
 import "authservice/internal/domain"
 
 type SetUserInfoReq struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+	Name  string `json:"name"`
+	Age   int    `json:"age"`
+	Email string `json:"email"`
 }
 
 type SetUserRoleReq struct {

@@ -12,6 +12,7 @@ func NewRouter() *http.ServeMux {
 	router := http.NewServeMux()
 	router.Handle("/sign_up", CORS(LogUser(http.HandlerFunc(SignUp))))
 	router.Handle("/sign_in", CORS(LogUser(http.HandlerFunc(SignIn))))
+	router.Handle("/reset_password", CORS(LogUser(http.HandlerFunc(ResetPassword))))
 
 	router.Handle("/get_user_info", CORS(Auth(LogUser(http.HandlerFunc(GetUserInfo)))))
 	router.Handle("/set_user_info", CORS(Auth(LogUser(http.HandlerFunc(SetUserInfo)))))
