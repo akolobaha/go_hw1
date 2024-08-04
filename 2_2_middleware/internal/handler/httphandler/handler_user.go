@@ -114,12 +114,47 @@ func SetUserInfo(resp http.ResponseWriter, req *http.Request) {
 	if err := service.SetUserInfo(&domain.UserInfo{
 		ID:   userID,
 		Name: input.Name,
+		Age:  input.Age,
 	}); err != nil {
 		resp.WriteHeader(http.StatusNotFound)
 		respBody.SetError(err)
 		return
 	}
 }
+
+func SetUserRole(resp http.ResponseWriter, req *http.Request) {
+
+	respBody := &HTTPResponse{}
+	defer func() {
+		resp.Write(respBody.Marshall())
+	}()
+
+	var input SetUserRoleReq
+
+	if err := readBody(req, &input); err != nil {
+		resp.WriteHeader(http.StatusUnprocessableEntity)
+		respBody.SetError(err)
+		return
+	}
+
+	if !input.IsValid() {
+		resp.WriteHeader(http.StatusBadRequest)
+		respBody.SetError(errors.New("invalid input"))
+		return
+	}
+
+	userID, _ := primitive.ObjectIDFromHex(req.Header.Get(HeaderUserID))
+
+	if err := service.SetUserRole(&domain.UserRole{
+		ID:   userID,
+		Role: input.Role,
+	}); err != nil {
+		resp.WriteHeader(http.StatusNotFound)
+		respBody.SetError(err)
+		return
+	}
+}
+
 func ChangePsw(resp http.ResponseWriter, req *http.Request) {
 
 	respBody := &HTTPResponse{}

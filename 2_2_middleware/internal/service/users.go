@@ -85,6 +85,20 @@ func SetUserInfo(ui *domain.UserInfo) error {
 	}
 
 	user.Name = ui.Name
+	user.Age = ui.Age
+
+	return users.SetUser(user)
+
+}
+
+func SetUserRole(ui *domain.UserRole) error {
+
+	user, err := users.GetUser(ui.ID)
+	if err != nil {
+		return err
+	}
+
+	user.Role = ui.Role
 
 	return users.SetUser(user)
 
@@ -112,6 +126,8 @@ func GetUserShortInfo(id primitive.ObjectID) (*domain.UserInfo, error) {
 	ui := domain.UserInfo{
 		ID:   user.ID,
 		Name: user.Name,
+		Age:  user.Age,
+		Role: user.Role,
 	}
 
 	return &ui, nil

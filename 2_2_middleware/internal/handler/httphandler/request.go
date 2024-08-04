@@ -1,7 +1,14 @@
 package httphandler
 
+import "authservice/internal/domain"
+
 type SetUserInfoReq struct {
 	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+type SetUserRoleReq struct {
+	Role string `json:"role"`
 }
 
 type ChangePswReq struct {
@@ -10,6 +17,10 @@ type ChangePswReq struct {
 
 func (r SetUserInfoReq) IsValid() bool {
 	return r.Name != ""
+}
+
+func (r SetUserRoleReq) IsValid() bool {
+	return r.Role == domain.UserRoleDefault || r.Role == domain.UserRoleAdmin
 }
 
 func (r ChangePswReq) IsValid() bool {

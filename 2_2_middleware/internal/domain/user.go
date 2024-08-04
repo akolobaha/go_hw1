@@ -13,11 +13,20 @@ type User struct {
 	Password string             `json:"password"`
 	Name     string             `json:"name"`
 	Role     string             `json:"role"`
+	Active   bool               `json:"active"`
+	Age      int                `json:"age"`
 }
 
 type UserInfo struct {
 	ID   primitive.ObjectID `json:"id"`
 	Name string             `json:"name"`
+	Age  int                `json:"age"`
+	Role string             `json:"role"`
+}
+
+type UserRole struct {
+	ID   primitive.ObjectID `json:"id"`
+	Role string             `json:"active"`
 }
 
 type UserPassword struct {

@@ -15,6 +15,7 @@ func NewRouter() *http.ServeMux {
 
 	router.Handle("/get_user_info", CORS(Auth(LogUser(http.HandlerFunc(GetUserInfo)))))
 	router.Handle("/set_user_info", CORS(Auth(LogUser(http.HandlerFunc(SetUserInfo)))))
+	router.Handle("/set_user_role", CORS(Auth(LogUser(http.HandlerFunc(SetUserRole)))))
 	router.Handle("/change_psw", CORS(Auth(LogUser(http.HandlerFunc(ChangePsw)))))
 	// admin handlers
 	router.Handle("/admin/get_user_info", CORS(Auth(isAdmin(LogUser(http.HandlerFunc(AdminGetUserInfo))))))
