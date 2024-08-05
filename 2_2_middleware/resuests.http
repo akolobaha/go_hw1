@@ -1,4 +1,4 @@
-@login = "login10"
+@login = "login11"
 @password = "password"
 @email = "xp_89@mail.ru"
 
@@ -68,3 +68,11 @@ Authorization: {{auth_token}}
   "role": "admin"
 }
 
+### Активировать / деактивировать пользователя
+POST 127.0.0.1:8000/set_user_active?user_id=66afde13aad77a15492fbf0b
+Content-Type: application/j son
+Authorization: {{auth_token}}
+
+{
+  "active": true
+}

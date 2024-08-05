@@ -14,14 +14,16 @@ func NewRouter() *http.ServeMux {
 	router.Handle("/sign_in", CORS(LogUser(http.HandlerFunc(SignIn))))
 	router.Handle("/reset_password", CORS(LogUser(http.HandlerFunc(ResetPassword))))
 
-	router.Handle("/get_user_info", CORS(Auth(LogUser(http.HandlerFunc(GetUserInfo)))))
-	router.Handle("/set_user_info", CORS(Auth(LogUser(http.HandlerFunc(SetUserInfo)))))
-	router.Handle("/set_user_role", CORS(Auth(LogUser(http.HandlerFunc(SetUserRole)))))
-	router.Handle("/change_psw", CORS(Auth(LogUser(http.HandlerFunc(ChangePsw)))))
+	router.Handle("/get_user_info", CORS(Auth(IsActive(LogUser(http.HandlerFunc(GetUserInfo))))))
+	router.Handle("/set_user_info", CORS(Auth(IsActive(LogUser(http.HandlerFunc(SetUserInfo))))))
+	router.Handle("/set_user_role", CORS(Auth(IsActive(LogUser(http.HandlerFunc(SetUserRole))))))
+
+	router.Handle("/change_psw", CORS(Auth(IsActive(LogUser(http.HandlerFunc(ChangePsw))))))
 	// admin handlers
 	router.Handle("/admin/get_user_info", CORS(Auth(isAdmin(LogUser(http.HandlerFunc(AdminGetUserInfo))))))
+	router.Handle("/set_user_active", CORS(Auth(isAdmin(LogUser(http.HandlerFunc(AdminSetUserIsActive))))))
 
-	router.Handle("/v2/get_user_info", CORS(Auth(LogUser(http.HandlerFunc(GetUserInfoV2)))))
+	router.Handle("/v2/get_user_info", CORS(Auth(IsActive(LogUser(http.HandlerFunc(GetUserInfoV2))))))
 
 	return router
 }

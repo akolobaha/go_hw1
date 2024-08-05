@@ -12,6 +12,10 @@ type SetUserRoleReq struct {
 	Role string `json:"role"`
 }
 
+type SetUserActiveReq struct {
+	Active bool `json:"active"`
+}
+
 type ChangePswReq struct {
 	Password string `json:"password"`
 }

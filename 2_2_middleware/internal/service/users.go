@@ -33,6 +33,7 @@ func SignUp(lp *domain.LoginPassword) (*domain.UserToken, error) {
 		Password: hash(lp.Password),
 		Role:     domain.UserRoleDefault,
 		Email:    lp.Email,
+		Active:   true,
 	}
 
 	if err := users.SetUser(&newUser); err != nil {
@@ -137,6 +138,19 @@ func SetUserRole(ui *domain.UserRole) error {
 
 }
 
+func SetUserIsActive(ui *domain.UserIsActive) error {
+
+	user, err := users.GetUser(ui.ID)
+	if err != nil {
+		return err
+	}
+
+	user.Active = ui.Active
+
+	return users.SetUser(user)
+
+}
+
 func ChangePsw(up *domain.UserPassword) error {
 
 	user, err := users.GetUser(up.ID)
@@ -162,6 +176,20 @@ func GetUserShortInfo(id primitive.ObjectID) (*domain.UserInfo, error) {
 		Age:   user.Age,
 		Role:  user.Role,
 		Email: user.Email,
+	}
+
+	return &ui, nil
+}
+
+func GetUserIsActive(id primitive.ObjectID) (*domain.UserIsActive, error) {
+	user, err := users.GetUser(id)
+	if err != nil {
+		return nil, err
+	}
+
+	ui := domain.UserIsActive{
+		ID:     user.ID,
+		Active: user.Active,
 	}
 
 	return &ui, nil

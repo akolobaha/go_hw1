@@ -52,6 +52,11 @@ type UserToken struct {
 	Token  string             `json:"token"`
 }
 
+type UserIsActive struct {
+	ID     primitive.ObjectID `json:"id"`
+	Active bool               `json:"active"`
+}
+
 type UserMessage struct {
 	UserId  primitive.ObjectID `json:"id"`
 	Message string             `json:"message"`
