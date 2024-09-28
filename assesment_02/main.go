@@ -99,6 +99,14 @@ func validateBoth(matrix [][]int, slice []int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	_, err = answerIsInMatrixRange(matrix, slice)
+	if err != nil {
+		return false, err
+	}
+	_, err = matrixElementsPositive(matrix)
+	if err != nil {
+		return false, err
+	}
 	_, err = matrixNoLoop(matrix)
 	if err != nil {
 		return false, err
@@ -112,6 +120,26 @@ func answerLength(matrix [][]int, slice []int) (bool, error) {
 		return true, nil
 	}
 	return false, errors.New("matrix length does not match slice length")
+}
+
+func answerIsInMatrixRange(matrix [][]int, slice []int) (bool, error) {
+	for _, val := range slice {
+		if val > len(matrix) {
+			return false, errors.New("answer slice is out of matrix range")
+		}
+	}
+	return true, nil
+}
+
+func matrixElementsPositive(matrix [][]int) (bool, error) {
+	for i, row := range matrix {
+		for j, _ := range row {
+			if matrix[i][j] < 0 {
+				return false, errors.New("all matrix values must be positive")
+			}
+		}
+	}
+	return true, nil
 }
 
 func answerIsUnique(slice []int) (bool, error) {
@@ -136,7 +164,7 @@ func matrixNoLoop(matrix [][]int) (bool, error) {
 
 func matrixIsSquare(matrix [][]int) (bool, error) {
 	for i := 0; i < len(matrix); i++ {
-		if len(matrix) != len(matrix[0]) {
+		if len(matrix) != len(matrix[i]) {
 			return false, errors.New("matrix is not square shape")
 		}
 	}
